@@ -1,6 +1,7 @@
 # Cline guide
 
-Verified against current Cline documentation and changelog on 2026-07-29.
+Verified against current Cline documentation, changelog (4.1.26), and
+upstream source on 2026-11-08.
 
 > **Type:** Cline is a coding-agent harness/client available across IDE and CLI
 > surfaces. It can run models from multiple providers; Cline is the host, not
@@ -11,24 +12,28 @@ Verified against current Cline documentation and changelog on 2026-07-29.
 | Artifact | Project | User-global |
 | --- | --- | --- |
 | Universal persistent instructions | `AGENTS.md` | `~/.agents/AGENTS.md` |
-| Native Cline rules | `.clinerules/*.md` or `.txt` | `~/Documents/Cline/Rules/` (also check `~/Cline/Rules/` on Linux/WSL) |
-| Recommended native skills | `.cline/skills/<name>/SKILL.md` | `~/.cline/skills/<name>/SKILL.md` |
-| Compatible project skills | `.clinerules/skills/<name>/` or `.claude/skills/<name>/` | — |
-| Invocation workflow shims | `.clinerules/workflows/<name>.md` | Host-specific |
+| Native Cline rules | `.cline/rules/` or legacy `.clinerules/` | `~/.cline/rules/`, `~/Documents/Cline/Rules/` (also `~/Cline/Rules/`) |
+| Agent Skills | `.agents/skills/`, `.claude/skills/`, `.cline/skills/`, or legacy `.clinerules/skills/` | `~/.cline/skills/` or `~/.agents/skills/` |
+| Workflows | `.cline/workflows/` or legacy `.clinerules/workflows/` | `~/.cline/workflows/`, `~/Documents/Cline/Workflows/` |
 
-For the universal layout, let Cline read `AGENTS.md` and the generated
-`.claude/skills` shim. Generate a matching workflow shortcut for every skill.
-A separate `.cline/skills` copy is unnecessary.
+`CLINE_DIR` replaces `~/.cline/` as the global configuration directory. Cline's
+configuration reference marks `.clinerules/` as the legacy workspace layout;
+the shared SDK names it deprecated.
+
+For the universal layout, Cline reads `AGENTS.md` and `.agents/skills`
+directly. It needs no Cline-specific file.
 
 ## Rules
 
 Cline recognizes root `AGENTS.md` as a cross-tool rule type and shows it in the
 Rules panel. It also reads global cross-tool instructions from
-`~/.agents/AGENTS.md`.
+`~/.agents/AGENTS.md`, and detects `.cursorrules` and `.windsurfrules`. It does
+not document reading `CLAUDE.md`. Workspace and global rules combine, and
+workspace rules win on conflict.
 
-Use `.clinerules/` only for Cline-specific modular rules or conditional
+Use `.cline/rules/` only for Cline-specific modular rules or conditional
 activation. A rule without frontmatter is always active. A conditional rule
-uses Cline's `paths` frontmatter:
+uses Cline's `paths` frontmatter, currently the only supported conditional:
 
 ```yaml
 ---
@@ -38,58 +43,58 @@ paths:
 ---
 ```
 
-Do not copy the same always-on body into both `AGENTS.md` and `.clinerules/`.
+Do not copy the same always-on body into both `AGENTS.md` and `.cline/rules/`.
 Cline combines detected rule types; duplicate input wastes context and can make
 precedence unclear.
 
-## Skills and workflows
+## Skills
 
-Cline loads skill metadata at startup, then uses its internal `use_skill` tool
-to read `SKILL.md` when relevant. Users can explicitly invoke an enabled skill
-as `/skill-name`.
+Cline loads skill metadata at startup and activates a matching skill through
+its `skills` tool, which reads the full `SKILL.md`. Users can force a skill with
+`/skill-name`. Skills are enabled by default and can be toggled individually.
 
-The current Cline skills page documents:
+The skills page documents `name` (matching the directory, kebab-case) and
+`description` (at most 1,024 characters), and recommends keeping `SKILL.md`
+under about 5k tokens.
 
-- `.cline/skills/` as the recommended project path;
-- `.clinerules/skills/` and `.claude/skills/` as compatible project paths;
-- `~/.cline/skills/` as the global path;
-- global skills taking precedence over same-name project skills.
+### Discovery and collisions
 
-Because `.claude/skills` is also Claude Code's required project path, it is the
-smallest documented Cline adapter in a universal repository.
+Cline's skills page lists `.cline/skills/` (recommended), `.clinerules/skills/`,
+and `.claude/skills/`. Its configuration reference also lists `.agents/skills/`
+and `~/.agents/skills/`, and upstream source scans all of them. Changelog
+4.1.24 restored `.claude/skills` discovery after the SDK migration.
 
-Cline's custom workflow format lives under `.clinerules/workflows/` and is
-invoked as `/your-workflow.md`. Cline does not require a workflow wrapper for a
-skill—the skill already has `/skill-name`—but this repository's policy
-generates a workflow shortcut for consistent explicit invocation.
+In upstream source, project directories are scanned in this order:
+`.clinerules/skills`, `.cline/skills`, `.claude/skills`, `.agents/skills`; then
+`~/.cline/skills` and `~/.agents/skills`; then enterprise remote skills.
+Skills are deduplicated by `name`, and the last one found wins. So:
 
-For a skill named `review-api`, generate
-`.clinerules/workflows/review-api.md`:
+- in the universal layout, both `.agents/skills/<name>` and the generated
+  `.claude/skills/<name>` mirror are seen, but Cline lists the skill once and
+  resolves it to `.agents/skills`;
+- a same-name global skill overrides the project skill, and an enterprise
+  skill overrides both.
 
-```markdown
-# Use the skill
+This order comes from source, not the published docs. Keep the mirror
+byte-identical so the resolution does not matter, and recheck it in the Skills
+panel after upgrading.
 
-Use the `review-api` skill for this request. Follow its `SKILL.md`
-instructions exactly. Use relevant context already supplied by the user and
-ask for any required input that is missing.
-```
+## Workflows
 
-Invoke it as `/review-api.md`. Keep this file thin: do not copy the procedure
-from `SKILL.md`, add Cline-specific workflow steps, or create a second source
-of truth.
+Cline workflows are Markdown files under `.cline/workflows/` (legacy
+`.clinerules/workflows/`) invoked from the slash menu. Since 4.1.4, skills
+appear alongside workflows in that menu, and same-name commands are
+disambiguated rather than shadowed.
 
-## `.agents/skills` caveat
+Earlier versions of this repository generated a
+`.clinerules/workflows/<name>.md` shortcut for every skill. That is no longer
+recommended: Cline's native `/skill-name` already provides explicit
+invocation, and a same-name workflow adds a duplicate menu entry. To migrate,
+delete generated shims that only delegated to a skill, after confirming
+nothing else invokes them.
 
-Cline's changelog has moved a built-in PR skill to `.agents/skills`, and
-GitHub's current `gh skill install` documentation identifies
-`.agents/skills` as a shared Cline project destination. However, Cline's own
-current skills reference does not list that path.
-
-Do not depend solely on `.agents/skills` for Cline until the selected Cline
-release demonstrably discovers it. In a repository that contains both
-`.agents/skills` and `.claude/skills`, inspect the Skills panel or `/skills`:
-newer releases may expose both copies. Keep generated shims byte-identical and resolve
-any duplicate entry instead of assuming a precedence rule.
+Keep a workflow only for Cline-specific orchestration that a skill cannot
+express, and do not copy a skill's procedure into it.
 
 ## Universal layout
 
@@ -97,29 +102,29 @@ Cline directly consumes:
 
 ```text
 AGENTS.md
-.claude/skills/<name>/SKILL.md
-.clinerules/workflows/<name>.md
+.agents/skills/<name>/SKILL.md
 ```
 
-It does not need `CLAUDE.md`; that file exists for Claude Code. The workflow
-file is only an invocation shim. Persistent Cline-only path rules remain
+It also sees the `.claude/skills` mirror (resolved as above). It does not need
+`CLAUDE.md` or `.gemini/settings.json`. Persistent Cline-only path rules remain
 separate.
 
 ## Validate
 
 1. Open a fresh task and confirm `AGENTS.md` appears in the Rules panel.
-2. Open the Skills panel or `/skills`; confirm each skill is enabled and listed
-   once.
-3. Invoke `/skill-name.md` and confirm it delegates to the intended skill.
-4. Invoke native `/skill-name` and test implicit activation separately.
-5. Inspect `~/.cline/skills` for a same-name global override.
-6. If both `.agents/skills` and `.claude/skills` are scanned, verify which entry
-   Cline resolves and remove unneeded Cline-specific duplicates.
+2. Open the Skills panel or `/skills`; confirm each skill is enabled, listed
+   once, and points at `.agents/skills`.
+3. Invoke `/skill-name` and test implicit activation separately.
+4. Inspect `~/.cline/skills` and `~/.agents/skills` for a same-name global
+   override.
+5. Confirm no leftover delegating workflow shims remain in
+   `.clinerules/workflows/` or `.cline/workflows/`.
 
 ## Official sources
 
 - [Cline rules](https://docs.cline.bot/customization/cline-rules)
 - [Cline skills](https://docs.cline.bot/customization/skills)
-- [Using commands and custom workflows](https://docs.cline.bot/core-workflows/using-commands)
+- [Cline configuration reference](https://docs.cline.bot/getting-started/config)
+- [Using commands](https://docs.cline.bot/core-workflows/using-commands)
 - [Cline changelog](https://github.com/cline/cline/blob/main/CHANGELOG.md)
-- [GitHub CLI skill installation paths](https://cli.github.com/manual/gh_skill_install)
+- [Cline SDK storage paths (source)](https://github.com/cline/cline/blob/main/sdk/packages/shared/src/storage/paths.ts)

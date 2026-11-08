@@ -8,8 +8,9 @@ This repository is a public, vendor-neutral playbook for:
 - Google Antigravity CLI (`agy`)
 - OpenAI Codex
 - Claude Code
+- Google Gemini CLI
 - Cline
-- Pi
+- OpenCode
 
 It separates portable behavior from host-specific discovery, invocation, and
 enforcement. The result is one authoritative workflow or rule with small,
@@ -17,12 +18,16 @@ generated adapters instead of several independently maintained versions.
 
 > This is a community-maintained documentation project. It is not affiliated
 > with, endorsed by, or an official publication of Google, OpenAI, Anthropic,
-> Cline, or the Pi maintainers.
+> Cline, or the OpenCode maintainers.
 
 ## Scope
 
 The documented Antigravity target is the `agy` CLI. Antigravity Desktop/IDE is
-not currently part of the compatibility contract.
+not currently part of the compatibility contract. Gemini CLI is covered as a
+separate harness from `agy`.
+
+Pi and other harnesses are no longer in scope. Earlier versions of these guides
+documented Pi; that guide has been removed.
 
 The guides cover:
 
@@ -45,7 +50,7 @@ These guides help you:
 
 - write Agent Skills that remain portable;
 - maintain one authoritative set of repository rules;
-- provide an explicit invocation shortcut in every supported harness;
+- use each harness's native explicit invocation, without wrapper files;
 - generate only the shims that are actually required;
 - avoid duplicate skill discovery and drifting copies;
 - keep permissions, hooks, and other enforcement host-specific;
@@ -62,8 +67,9 @@ Choose the guide that matches your task:
 | Configure Antigravity CLI | [`agy` guide](docs/agy.md) |
 | Configure OpenAI Codex | [Codex guide](docs/codex.md) |
 | Configure Claude Code | [Claude Code guide](docs/claude.md) |
+| Configure Gemini CLI | [Gemini CLI guide](docs/gemini.md) |
 | Configure Cline | [Cline guide](docs/cline.md) |
-| Configure Pi | [Pi guide](docs/pi.md) |
+| Configure OpenCode | [OpenCode guide](docs/opencode.md) |
 
 The universal guide is normative for shared authoring. Each harness guide
 explains how that shared design maps to its native discovery paths, rule
@@ -79,8 +85,9 @@ systems, workflow features, invocation syntax, and validation tools.
     ├── agy.md
     ├── codex.md
     ├── claude.md
+    ├── gemini.md
     ├── cline.md
-    └── pi.md
+    └── opencode.md
 ```
 
 ## Recommended universal layout
@@ -88,27 +95,28 @@ systems, workflow features, invocation syntax, and validation tools.
 ```text
 AGENTS.md
 CLAUDE.md
+.gemini/
+  settings.json
 .agents/
   skills/<name>/SKILL.md
 .claude/
   skills/<name>/SKILL.md
-.clinerules/
-  workflows/<name>.md
 ```
 
 Ownership:
 
 - `AGENTS.md` is the authoritative persistent project guidance.
-- `CLAUDE.md` is a rules shim containing `@AGENTS.md`.
+- `CLAUDE.md` is a rules bridge containing `@AGENTS.md` for Claude Code.
+- `.gemini/settings.json` sets `context.fileName` so Gemini CLI reads
+  `AGENTS.md`.
 - `.agents/skills/<name>/` is the authoritative skill source.
-- `.claude/skills/<name>/` is a byte-identical generated skill shim for
-  Claude Code and Cline.
-- `.clinerules/workflows/<name>.md` is a thin generated Cline invocation
-  shortcut that delegates to the corresponding skill.
+- `.claude/skills/<name>/` is a byte-identical generated skill mirror for
+  Claude Code.
 
-Antigravity CLI, Codex, and Pi read the authoritative `.agents/skills` tree
-directly. Their native skill interfaces already provide explicit invocation,
-so they do not require additional workflow wrappers.
+Antigravity CLI, Codex, Gemini CLI, Cline, and OpenCode read the
+authoritative `.agents/skills` tree directly. Claude Code is the only harness
+that needs a skill copy; Cline and OpenCode also see it but resolve to the
+`.agents/skills` source.
 
 ## Explicit invocation
 
@@ -117,8 +125,9 @@ so they do not require additional workflow wrappers.
 | Antigravity CLI | `/skill-name` |
 | Codex | Select `$skill-name`, or browse with `/skills` |
 | Claude Code | `/skill-name` |
-| Cline | `/skill-name.md` through the generated workflow shortcut; native `/skill-name` also works |
-| Pi | `/skill:skill-name` when skill commands are enabled |
+| Gemini CLI | Name the skill in the prompt; no per-skill slash command yet |
+| Cline | `/skill-name` |
+| OpenCode | `@skill-name` in the prompt |
 
 Plain-language invocation remains portable:
 
@@ -144,8 +153,8 @@ workflows in a repository using these guides:
    - skills in `.agents/skills/<name>/`.
 7. Regenerate required shims:
    - `CLAUDE.md`;
-   - `.claude/skills/<name>/`;
-   - `.clinerules/workflows/<name>.md`.
+   - `.gemini/settings.json` (merge; never overwrite user settings);
+   - `.claude/skills/<name>/`.
 8. Keep permissions, hooks, sandbox settings, plugins, and conditional rule
    metadata host-specific.
 9. Validate discovery and explicit invocation in a fresh session for every
@@ -177,7 +186,7 @@ and make the host-specific artifact a thin adapter.
 
 ## Documentation freshness
 
-The guides were checked against current official documentation on 2026-07-29.
+The guides were checked against current official documentation on 2026-11-08.
 Vendor discovery paths and invocation features can change, so each
 harness-specific guide ends with the official sources used for verification.
 
