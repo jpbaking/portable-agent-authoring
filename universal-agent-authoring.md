@@ -1,14 +1,15 @@
 # Universal skills, rules, and workflows
 
-Verified against current official documentation on 2026-07-29.
+Verified against current official documentation on 2026-11-08.
 
 This is the cross-harness authoring guide for:
 
 - [Antigravity CLI (`agy`)](docs/agy.md)
 - [OpenAI Codex](docs/codex.md)
 - [Claude Code](docs/claude.md)
+- [Gemini CLI](docs/gemini.md)
 - [Cline](docs/cline.md)
-- [Pi](docs/pi.md)
+- [OpenCode](docs/opencode.md)
 
 The names are easy to blur together. In this guide, a **harness** is the client
 or runtime that discovers instructions, exposes tools, and runs an agent loop.
@@ -21,59 +22,64 @@ the smallest number of host discovery adapters. Discovery paths, invocation
 syntax, conditional-rule metadata, permissions, hooks, and dedicated workflow
 formats are not universal.
 
-## Short answer: can `AGENTS.md` remove all shims?
+## Short answer: can `AGENTS.md` and `.agents/skills` remove all shims?
 
-No, not across all five documented harnesses.
+Almost, but not across all six documented harnesses.
 
-- `agy`, Codex, Cline, and Pi read project `AGENTS.md` natively.
-- Claude Code explicitly reads `CLAUDE.md`, not `AGENTS.md`. Its documented
-  bridge is a one-line `CLAUDE.md` import: `@AGENTS.md`.
+- `agy`, Codex, Cline, and OpenCode read project `AGENTS.md` natively.
+- Claude Code reads `AGENTS.md` natively since v2.1.277, but only when no
+  `CLAUDE.md` or `CLAUDE.local.md` exists, and not in every session. A
+  one-line `CLAUDE.md` containing `@AGENTS.md` makes loading deterministic and
+  never causes a double read.
+- Gemini CLI reads `GEMINI.md` by default. Its `context.fileName` setting in
+  `.gemini/settings.json` makes it read `AGENTS.md` instead.
+- `agy`, Codex, Gemini CLI, Cline, and OpenCode all discover
+  `.agents/skills`.
+- Claude Code still discovers project skills only under `.claude/skills`, so
+  it needs a generated mirror.
 - `AGENTS.md` can tell an already-running agent to read another file, but it
   cannot add that file to a harness's skill registry. Registry discovery,
   metadata loading, implicit activation, and slash-command completion happen
   through host-supported skill locations.
-- Claude Code still needs project skills under `.claude/skills`. Codex, `agy`,
-  and Pi share `.agents/skills`. Cline documents `.claude/skills` as a
-  compatibility project path, so it does not need a third project copy.
 
 The selected policy is **generated shims**:
 
-- `CLAUDE.md` is a thin rules shim that imports the authoritative
+- `CLAUDE.md` is a thin rules bridge that imports the authoritative
   `AGENTS.md`.
-- `.claude/skills/<name>/` is a full generated skill shim: a byte-identical
-  mirror of the authoritative `.agents/skills/<name>/` directory.
-- `.clinerules/workflows/<name>.md` is a thin generated invocation shim that
-  tells Cline to use the corresponding skill.
+- `.gemini/settings.json` is a thin settings adapter that points Gemini CLI at
+  `AGENTS.md`.
+- `.claude/skills/<name>/` is a full generated skill mirror: a byte-identical
+  copy of the authoritative `.agents/skills/<name>/` directory.
 - Symlinks are not used. This avoids Windows privilege and Git checkout
-  differences, plus undocumented link behavior in some harnesses.
+  differences, plus differing link behavior across harnesses.
 
 The project layout is therefore:
 
 ```text
-AGENTS.md
-CLAUDE.md                              # contains @AGENTS.md
+AGENTS.md                              # authoritative rules
+CLAUDE.md                              # bridge: @AGENTS.md (Claude Code)
+.gemini/
+  settings.json                        # adapter: context.fileName (Gemini CLI)
 .agents/
-  skills/<name>/SKILL.md               # authoritative: agy + Codex + Pi
+  skills/<name>/SKILL.md               # authoritative: agy, Codex, Gemini CLI, Cline, OpenCode
 .claude/
-  skills/<name>/SKILL.md               # generated shim: Claude Code + Cline
-.clinerules/
-  workflows/<name>.md                  # generated Cline shortcut
+  skills/<name>/SKILL.md               # generated mirror: Claude Code
 ```
 
-This is one authoritative rules file plus one bridge, and two skill discovery
-trees. Only `AGENTS.md` and `.agents/skills` are edited by hand. The Claude
-files and Cline workflow shortcuts are adapters and must be regenerated from
-those sources.
+Only `AGENTS.md` and `.agents/skills` are edited by hand. `CLAUDE.md` and
+`.gemini/settings.json` change only when their host requirements change, and
+the `.claude/skills` mirror is regenerated from the source.
 
 ## Compatibility summary
 
-| Host | What it is | Reads project `AGENTS.md`? | Documented project skill path used here | Portable workflow form |
+| Host | What it is | Reads project `AGENTS.md`? | Reads `.agents/skills`? | Adapter in this layout |
 | --- | --- | --- | --- | --- |
-| `agy` | Antigravity's terminal harness | Yes | `.agents/skills/<name>/SKILL.md` | Agent Skill |
-| Codex | Coding-agent product and harness family; this guide targets local CLI/IDE discovery | Yes | `.agents/skills/<name>/SKILL.md` | Agent Skill |
-| Claude Code | Coding harness/client for Claude agents | No; import it from `CLAUDE.md` | `.claude/skills/<name>/SKILL.md` | Agent Skill |
-| Cline | Model-provider-independent coding harness/client | Yes | `.claude/skills/<name>/SKILL.md` | Agent Skill plus generated workflow shortcut |
-| Pi | Minimal terminal coding harness | Yes | `.agents/skills/<name>/SKILL.md` | Agent Skill |
+| `agy` | Antigravity's terminal harness | Yes | Yes | None |
+| Codex | Coding-agent product and harness family; this guide targets local CLI/IDE discovery | Yes | Yes | None |
+| Claude Code | Coding harness/client for Claude agents | Yes (v2.1.277+), only without `CLAUDE.md`; bridge with `@AGENTS.md` | No; `.claude/skills` | `CLAUDE.md`, `.claude/skills` mirror |
+| Gemini CLI | Google's open-source terminal harness | Only via `context.fileName` | Yes (alias, preferred over `.gemini/skills`) | `.gemini/settings.json` |
+| Cline | Model-provider-independent coding harness/client | Yes | Yes | None |
+| OpenCode | Open-source, provider-independent coding harness (V2) | Yes (`AGENTS.md` only; no `CLAUDE.md` fallback) | Yes | None |
 
 See the harness-specific guides for user-global paths, precedence, invocation
 syntax, dedicated rules, and vendor workflows.
@@ -106,20 +112,40 @@ include only information an agent cannot reliably infer from the repository:
 - completion and reporting expectations;
 - pointers to optional, task-specific skills.
 
-Add this bridge for Claude Code:
+Keep it well under the smallest host budget: Codex stops at 32 KiB of combined
+project instructions, and `agy` truncates a rule file at 24,000 bytes.
+
+Add the Claude Code bridge as `CLAUDE.md`:
 
 ```markdown
 @AGENTS.md
 ```
 
-Claude Code expands the import at startup. Do not also copy the same body into
-`.claude/rules/`, because that loads the same instruction twice. Add
-Claude-only content below the import only when it is genuinely host-specific.
+Add the Gemini CLI adapter as `.gemini/settings.json` (merge into an existing
+file rather than replacing it):
 
-Nested instruction semantics differ. Codex, Claude Code, and Pi walk directory
-hierarchies in different ways, while Cline's primary rules system is rooted in
-`.clinerules/`. Treat a root `AGENTS.md` as the portable baseline. Add nested or
-path-scoped adapters only after reading the relevant harness guide.
+```json
+{
+  "context": {
+    "fileName": ["AGENTS.md", "GEMINI.md"]
+  }
+}
+```
+
+Do not create a project `GEMINI.md`. `agy` reads `GEMINI.md` and `AGENTS.md`
+cumulatively, so a `GEMINI.md` copy or bridge loads extra or duplicate rules
+there. Do not copy the `AGENTS.md` body into `.claude/rules/`, `.agents/rules/`,
+or `.cline/rules/` either; each would load the same instruction twice. Add
+host-only content below the `CLAUDE.md` import, or in that host's rules
+directory, only when it is genuinely host-specific.
+
+Nested instruction semantics differ. Codex reads one file per directory from
+the project root down; Claude Code loads ancestors at launch and subdirectories
+on demand; `agy` loads the workspace and its parents but not subfolders; Gemini
+CLI adds files just in time as tools touch paths; OpenCode combines ancestors
+nearest-first rather than root-first. Treat a root `AGENTS.md` as
+the portable baseline. Add nested or path-scoped adapters only after reading
+the relevant harness guide.
 
 Never put behavioral Markdown in Codex `.codex/rules/*.rules`; those files are
 Starlark command-execution policies.
@@ -127,7 +153,7 @@ Starlark command-execution policies.
 ## Author a universal skill
 
 Use `.agents/skills/<skill-name>/` as the authoritative project source and
-generate a complete shim at `.claude/skills/<skill-name>/`.
+generate a complete mirror at `.claude/skills/<skill-name>/`.
 
 Minimum `SKILL.md`:
 
@@ -147,32 +173,39 @@ description: State what this skill does and the requests or situations that shou
 
 Apply these portability constraints:
 
-- Use only `name` and `description` in shared YAML frontmatter.
+- Use only `name` and `description` in shared YAML frontmatter, and always
+  include both.
 - Make `name` lowercase kebab-case, no more than 64 characters, and identical
   to the directory name.
-- Keep `description` at or below 1,024 characters. Put the action, trigger
-  phrases, and important non-triggers first.
+- Keep `description` at or below 1,024 characters (Cline's limit). Put the
+  action, trigger phrases, and important non-triggers first. Quote it if it
+  contains a colon.
+- Keep the `SKILL.md` body under 24 KB (`agy`'s limit) and preferably under
+  about 5k tokens and 500 lines.
 - Write the body in imperative, agent-neutral language.
-- Request inputs in prose. Do not depend on `$ARGUMENTS`, positional
-  substitution, dynamic shell interpolation, or session variables.
+- Request inputs in prose. Do not depend on `$ARGUMENTS`, `{{args}}`,
+  positional substitution, dynamic shell interpolation, or session variables.
 - Refer to another skill as “the `other-skill` skill,” not `/other-skill`,
   `$other-skill`, or a host tool call.
 - Describe outcomes such as “search the repository”; do not name a harness's
-  internal tool such as Cline's `use_skill`.
+  internal tool such as Gemini CLI's `activate_skill`, Cline's `skills` tool,
+  or OpenCode's `skill` tool.
 - Put detailed reference material in `references/`, deterministic helpers in
   `scripts/`, and templates or output resources in `assets/`.
 - Keep relative links anchored to the skill directory.
 - State inputs, side effects, stopping conditions, validation, and final output.
 - Keep one skill focused on one user goal.
 
-Vendor-only frontmatter belongs in a host-specific fork, not in the universal
-copy. Examples include Claude Code's `allowed-tools`, `context`, `agent`,
-`disable-model-invocation`, `hooks`, and argument fields.
+Vendor-only frontmatter and metadata belong in a host-specific fork or sidecar,
+not in the universal copy. Examples include Claude Code's `when_to_use`,
+`allowed-tools`, `context`, `agent`, `disable-model-invocation`, `hooks`, and
+argument fields, Codex's `agents/openai.yaml`, and OpenCode's
+`metadata.opencode/autoinvoke`.
 
 ## Turn a vendor workflow into a universal skill
 
-Claude commands, Cline workflows, Pi prompt templates, and Antigravity
-workflows are convenient host interfaces, but their invocation and
+Claude commands, Gemini CLI TOML commands, OpenCode commands, Cline
+workflows, and Antigravity workflows are convenient host interfaces, but their invocation and
 interpolation syntax are not portable.
 
 To migrate one:
@@ -187,12 +220,10 @@ To migrate one:
 6. Replace host tool names with the result that must be achieved.
 7. Move deterministic logic to `scripts/` only when instructions are not
    reliable enough.
-8. Regenerate the full `.claude/skills/<name>/` shim.
-9. Generate the Cline invocation shim at
-   `.clinerules/workflows/<name>.md`.
-10. Test implicit and explicit activation in every selected harness.
-11. Retire any old workflow that duplicates the procedure after confirming
-    nothing still invokes it.
+8. Regenerate the full `.claude/skills/<name>/` mirror.
+9. Test implicit and explicit activation in every selected harness.
+10. Retire any old command or workflow that duplicates the procedure after
+    confirming nothing still invokes it.
 
 If the vendor workflow has behavior a skill cannot express, split it: keep
 portable reasoning and procedure in the skill, and put host automation in a
@@ -221,57 +252,67 @@ An agent performing the sync must first compare the destination, warn if it
 contains divergent user edits, and replace it only after those edits have been
 reconciled. This keeps regeneration idempotent without silently losing work.
 
-For each skill, also generate this Cline workflow shortcut:
-
-```markdown
-# Use the skill
-
-Use the `skill-name` skill for this request. Follow its `SKILL.md`
-instructions exactly. Use relevant context already supplied by the user and
-ask for any required input that is missing.
-```
-
-Save it as `.clinerules/workflows/skill-name.md`. The shortcut contains no
-copy of the workflow procedure, scripts, or host-specific argument
-interpolation. Its only job is to route `/skill-name.md` to the authoritative
-skill. Cline also exposes the skill's native `/skill-name` command; this extra
-workflow shortcut is a project policy, not a requirement of Cline's skills
-system.
-
 Do not rely on `.gitignore`, `.clineignore`, or another context-ignore file to
 deduplicate a skill registry unless that harness explicitly documents the
 behavior. File visibility and skill discovery are separate mechanisms.
 
-### Collision warning for Cline
+### Hosts that see both trees
 
-Cline's current skills page documents `.claude/skills` but not
-`.agents/skills`. Its changelog and GitHub's current `gh skill install`
-documentation also show emerging `.agents/skills` support. A version that scans
-both trees may see the authoritative and shim copies. Keep them byte-identical
-and inspect Cline's resolved Skills panel or `/skills` output. Do not assume
-deduplication or precedence.
+Cline scans both `.agents/skills` and `.claude/skills`. In current upstream
+source it deduplicates by `name` and resolves the project skill to
+`.agents/skills`; that order is not in Cline's published docs. Keep the trees
+byte-identical so either resolution behaves the same, and inspect the Skills
+panel after upgrading.
+
+OpenCode also scans both trees and documents its order: `.agents/skills` is
+registered after `.claude/skills`, so the `.agents/skills` copy wins. A same-ID
+skill in `.opencode/skills` or `~/.config/opencode/skills` still overrides
+both.
+
+`agy`, Codex, and Gemini CLI do not scan `.claude/skills`. Claude Code does not
+scan `.agents/skills`.
+
+### Migrating from the earlier layout
+
+Earlier versions of these guides also generated
+`.clinerules/workflows/<name>.md` shortcuts for Cline and documented Pi. Cline
+now exposes skills natively as `/skill-name` and shows same-name workflows as
+separate menu entries, so delete generated shortcuts that only delegated to a
+skill. Pi is no longer in scope; Pi-specific files such as `.pi/` are outside
+this layout and should be left to their owners.
 
 ## User-global installs
 
-There is no single fully documented global skill directory for all five.
+There is no single global skill directory that all six read.
 
-| Host | Current documented global skill location |
-| --- | --- |
-| `agy` CLI | `~/.gemini/antigravity-cli/skills/<name>/` |
-| Codex | `~/.agents/skills/<name>/` |
-| Claude Code | `~/.claude/skills/<name>/` |
-| Cline | `~/.cline/skills/<name>/` |
-| Pi | `~/.agents/skills/<name>/` or `~/.pi/agent/skills/<name>/` |
+| Host | Global skill locations | Global instructions |
+| --- | --- | --- |
+| `agy` | `~/.gemini/antigravity-cli/skills/`, `~/.gemini/skills/`, `~/.gemini/config/skills/` | `~/.gemini/GEMINI.md` or `~/.gemini/AGENTS.md` |
+| Codex | `~/.agents/skills/` | `~/.codex/AGENTS.md` |
+| Claude Code | `~/.claude/skills/` | `~/.claude/CLAUDE.md` |
+| Gemini CLI | `~/.agents/skills/` or `~/.gemini/skills/` | `~/.gemini/GEMINI.md` |
+| Cline | `~/.agents/skills/` or `~/.cline/skills/` | `~/.agents/AGENTS.md` |
+| OpenCode | `~/.config/opencode/skills/`, `~/.agents/skills/`, or `~/.claude/skills/` | `~/.config/opencode/AGENTS.md` |
 
-Thus `~/.agents/skills` can be the global authoritative tree for Codex and Pi, but
-`agy`, Claude Code, and Cline still need documented host copies. Global
-instructions also differ: Codex uses `~/.codex/AGENTS.md`, `agy` uses
-`~/.gemini/GEMINI.md`, Claude uses `~/.claude/CLAUDE.md`, Cline reads
-`~/.agents/AGENTS.md`, and Pi uses `~/.pi/agent/AGENTS.md`.
+A practical global layout:
+
+```text
+~/.agents/skills/<name>/                     # authoritative: Codex, Gemini CLI, Cline, OpenCode
+~/.claude/skills/<name>/                     # generated mirror: Claude Code
+~/.gemini/antigravity-cli/skills/<name>/     # generated mirror: agy
+```
+
+Use the `agy`-specific folder rather than `~/.gemini/skills/`, which Gemini
+CLI also reads and would list as a duplicate of `~/.agents/skills/`.
+
+`~/.gemini/GEMINI.md` serves both `agy` and Gemini CLI. The other global
+instruction files are separate per host.
 
 Global copies are per-user, per-machine, and single-version. Updating one
-changes behavior for every project using it. Merge into user-owned instruction
-files; never overwrite them wholesale.
+changes behavior for every project using it, and some hosts (Claude Code,
+Cline, and OpenCode's `~/.config/opencode/skills`) let a global skill override
+a same-name project skill. Merge into
+user-owned instruction files; never overwrite them wholesale.
 
 ## Invocation wording
 
@@ -283,11 +324,12 @@ Host-specific shortcuts:
 
 | Host | Explicit selection |
 | --- | --- |
-| `agy` | `/skill-name` in the CLI; a clear name mention also works |
+| `agy` | `/skill-name` |
 | Codex | Type `$` and select the skill, or use `/skills` |
 | Claude Code | `/skill-name` |
-| Cline | `/skill-name.md` through the generated workflow shortcut; native `/skill-name` also remains available |
-| Pi | `/skill:skill-name` when skill commands are enabled |
+| Gemini CLI | Name the skill in the prompt; no per-skill slash command yet (optional `.gemini/commands/<name>.toml` adapter) |
+| Cline | `/skill-name` |
+| OpenCode | `@skill-name` in the prompt (optional `.opencode/commands/<name>.md` adapter for a slash shortcut) |
 
 Never make success depend on slash autocomplete. A clear description must
 support implicit activation, and plain-language name mention remains the
@@ -301,24 +343,26 @@ For every skill:
 - [ ] Frontmatter contains only `name` and `description`.
 - [ ] The name matches the directory and satisfies the portable naming rules.
 - [ ] The description is trigger-oriented and no longer than 1,024 characters.
+- [ ] The body is under 24 KB.
 - [ ] No host-only invocation, interpolation, frontmatter, or tool name remains.
 - [ ] Every referenced resource exists.
 - [ ] Side effects, stopping conditions, validation, and output are explicit.
 - [ ] `.agents/skills/<name>` and `.claude/skills/<name>` match byte-for-byte.
-- [ ] `.clinerules/workflows/<name>.md` exists and only delegates to the
-      corresponding skill.
 
 For the repository:
 
 - [ ] `AGENTS.md` contains the shared rules.
 - [ ] `CLAUDE.md` imports `AGENTS.md` exactly once.
+- [ ] `.gemini/settings.json` lists `AGENTS.md` in `context.fileName`.
+- [ ] No project `GEMINI.md` exists.
 - [ ] The same rule body is not also auto-loaded from a host rules directory.
 - [ ] No behavioral guidance was placed in Codex `.codex/rules`.
+- [ ] No legacy delegating `.clinerules/workflows/<name>.md` shims remain.
 - [ ] Existing user-owned instructions survived migration.
 - [ ] Each harness lists the expected skill once.
-- [ ] Each Cline skill has a `/skill-name.md` workflow shortcut.
 
-In a fresh session for every harness:
+In a fresh session for every harness (trust the project first wherever the
+harness asks; Gemini CLI ignores workspace settings and skills otherwise):
 
 1. Ask a natural-language request that should select the skill.
 2. Invoke the skill explicitly with that harness's syntax.
@@ -334,8 +378,9 @@ The per-harness guides are the source of truth for host-specific behavior:
 - [`docs/agy.md`](docs/agy.md)
 - [`docs/codex.md`](docs/codex.md)
 - [`docs/claude.md`](docs/claude.md)
+- [`docs/gemini.md`](docs/gemini.md)
 - [`docs/cline.md`](docs/cline.md)
-- [`docs/pi.md`](docs/pi.md)
+- [`docs/opencode.md`](docs/opencode.md)
 
 Re-check the linked official sources before broad migrations. Discovery paths,
 precedence, and invocation features change faster than the Agent Skills file
