@@ -308,6 +308,10 @@ CLI also reads and would list as a duplicate of `~/.agents/skills/`.
 `~/.gemini/GEMINI.md` serves both `agy` and Gemini CLI. The other global
 instruction files are separate per host.
 
+To distribute skills and rules to other users' global paths, see
+[Agent toolkit repositories](agent-toolkit-repositories.md), which defines an
+agent-guided install contract for these destinations.
+
 Global copies are per-user, per-machine, and single-version. Updating one
 changes behavior for every project using it, and some hosts (Claude Code,
 Cline, and OpenCode's `~/.config/opencode/skills`) let a global skill override

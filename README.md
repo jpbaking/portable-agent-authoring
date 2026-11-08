@@ -64,6 +64,7 @@ Choose the guide that matches your task:
 | Goal | Read |
 | --- | --- |
 | Create or migrate something for all supported harnesses | [Universal skills, rules, and workflows](universal-agent-authoring.md) |
+| Publish a toolkit repository with an agent-guided installer | [Agent toolkit repositories](agent-toolkit-repositories.md) and the [`AGENT-INSTALL.md` template](templates/AGENT-INSTALL.md) |
 | Configure Antigravity CLI | [`agy` guide](docs/agy.md) |
 | Configure OpenAI Codex | [Codex guide](docs/codex.md) |
 | Configure Claude Code | [Claude Code guide](docs/claude.md) |
@@ -81,6 +82,9 @@ systems, workflow features, invocation syntax, and validation tools.
 .
 ├── README.md
 ├── universal-agent-authoring.md
+├── agent-toolkit-repositories.md
+├── templates/
+│   └── AGENT-INSTALL.md
 └── docs/
     ├── agy.md
     ├── codex.md
@@ -161,6 +165,10 @@ workflows in a repository using these guides:
    selected harness.
 10. Report the authoritative files, generated adapters, validation performed,
     and any unresolved discovery collisions.
+
+If the repository is a toolkit that other users install, also read
+[Agent toolkit repositories](agent-toolkit-repositories.md) and start its
+installer from [the template](templates/AGENT-INSTALL.md).
 
 Do not assume that `AGENTS.md` can register skills from arbitrary directories.
 Persistent instructions can tell an agent what to read, but skill discovery,
