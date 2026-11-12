@@ -327,11 +327,12 @@ behind enterprise authentication:
 Install <toolkit>. Using git with my existing credentials (do not download raw
 files or archives), clone <remote> at tag <tag> with --depth 1 and git's
 terminal prompt disabled (GIT_TERMINAL_PROMPT=0) into a new temporary
-directory outside any project. If the clone fails for lack of credentials,
-stop and tell me how to sign in. Then read AGENT-INSTALL.md from that clone
-and follow it exactly. Merge with—never blindly overwrite—any existing global
-instruction files, ask me which harnesses to install for, and report every
-file you created or changed.
+directory outside any project; a "not a commit" warning about the tag is
+normal. If the clone fails for lack of credentials, stop and tell me how to
+sign in. Then read AGENT-INSTALL.md from that clone and follow it exactly.
+Merge with—never blindly overwrite—any existing global instruction files, ask
+me which harnesses to install for, and report every file you created or
+changed.
 ```
 
 - **Write `<remote>` in the form your users can clone.** For an enterprise
@@ -339,7 +340,9 @@ file you created or changed.
   `https://github.com/<owner>/<repo>` works, and users of a fork or internal
   mirror substitute their own.
 - **Pin a tag** in the published prompt, or say that omitting it installs the
-  default branch as it is at clone time.
+  default branch as it is at clone time. A shallow clone of an annotated tag
+  prints `warning: refs/tags/<tag> … is not a commit!`; the prompt says this
+  is normal because the agent sees it before it reads the contract.
 - **Say what the prompt does.** The README should state that the user's agent
   will execute instructions from the cloned repository, and list the
   directories it may write to.
