@@ -71,6 +71,15 @@ compare the trees file by file.
 - The pointer summary in `AGENT-INSTALL.md` step 4 must describe the same
   behavior as `rules/shared/portable-agent-authoring.md`.
 
+## Releasing
+
+1. Merge the release changes to `main` with `scripts/sync-skills.sh --check`
+   passing.
+2. Create an annotated tag `vX.Y.Z` on that merge commit and push it.
+3. In a follow-up change, update the tag in the README install prompt and in
+   the "What this does" note below it. The README cannot name its own tag
+   before the tag exists, so this is always a separate change.
+
 ## Dogfooding collision
 
 If you also have this toolkit installed globally, every harness sees each
