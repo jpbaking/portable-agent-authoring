@@ -79,6 +79,9 @@ including the first step, goes through git:
   and never print credential-helper output.
 - **No interactive prompts.** Run git with `GIT_TERMINAL_PROMPT=0` so a missing
   credential fails instead of hanging the agent's shell on a password prompt.
+  This includes the bootstrap clone in the README prompt: the contract's
+  checks only start once the agent has a clone, so the prompt itself must
+  ask for non-interactive git and a clean stop on authentication failure.
 
 ### Skills must not fetch their own repository
 
@@ -320,11 +323,13 @@ behind enterprise authentication:
 
 ```text
 Install <toolkit>. Using git with my existing credentials (do not download raw
-files or archives), clone <remote> at tag <tag> with --depth 1 into a new
-temporary directory outside any project. Then read AGENT-INSTALL.md from that
-clone and follow it exactly. Merge with—never blindly overwrite—any existing
-global instruction files, ask me which harnesses to install for, and report
-every file you created or changed.
+files or archives), clone <remote> at tag <tag> with --depth 1 and git's
+terminal prompt disabled (GIT_TERMINAL_PROMPT=0) into a new temporary
+directory outside any project. If the clone fails for lack of credentials,
+stop and tell me how to sign in. Then read AGENT-INSTALL.md from that clone
+and follow it exactly. Merge with—never blindly overwrite—any existing global
+instruction files, ask me which harnesses to install for, and report every
+file you created or changed.
 ```
 
 - **Write `<remote>` in the form your users can clone.** For an enterprise

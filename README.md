@@ -95,11 +95,13 @@ Paste this prompt into any of the six harnesses:
 ```text
 Install Portable Agent Authoring. Using git with my existing credentials (do
 not download raw files or archives), clone
-https://github.com/jpbaking/portable-agent-authoring with --depth 1 into a new
-temporary directory outside any project. Then read AGENT-INSTALL.md from that
-clone and follow it exactly. Merge with—never blindly overwrite—any existing
-global instruction files, ask me which harnesses to install for, and report
-every file you created or changed.
+https://github.com/jpbaking/portable-agent-authoring with --depth 1 and git's
+terminal prompt disabled (GIT_TERMINAL_PROMPT=0) into a new temporary
+directory outside any project. If the clone fails for lack of credentials,
+stop and tell me how to sign in. Then read AGENT-INSTALL.md from that clone
+and follow it exactly. Merge with—never blindly overwrite—any existing global
+instruction files, ask me which harnesses to install for, and report every
+file you created or changed.
 ```
 
 What this does:

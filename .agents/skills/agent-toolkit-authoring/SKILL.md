@@ -160,8 +160,12 @@ Skip this step if the toolkit has no global rule.
 
 Add one paste-in prompt based on the guide's "The README install prompt":
 
-- clone with `git` using the user's existing credentials, `--depth 1`, into
-  a new temporary directory outside any project; no raw files or archives;
+- clone with `git` using the user's existing credentials, `--depth 1`, and
+  git's terminal prompt disabled (`GIT_TERMINAL_PROMPT=0`), into a new
+  temporary directory outside any project; no raw files or archives;
+- stop and tell the user how to sign in if the clone fails for lack of
+  credentials, since the contract's own access check runs only after a clone
+  exists;
 - pin the published tag, or state that omitting it installs the default
   branch as it is at clone time;
 - read `AGENT-INSTALL.md` from that clone and follow it exactly;
