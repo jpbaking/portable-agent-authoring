@@ -57,6 +57,11 @@ directory, so it never fetches anything at run time.
      `gh repo clone <host>/<owner>/<repo> <tmp>/portable-agent-authoring -- --depth 1 [--branch <tag>]`
      (`<host>/` may be omitted for github.com; for a fork, `gh` also adds and
      fetches an `upstream` remote).
+   With `--branch <tag>`, git may print
+   `warning: refs/tags/<tag> … is not a commit!` and a "detached HEAD" note.
+   Both are normal when cloning an annotated tag. The clone succeeded if the
+   command exited with status 0 and the clone contains `AGENT-INSTALL.md`; do
+   not treat these messages as failures.
 5. Record the tag, if any, and the commit SHA
    (`git -C <tmp>/portable-agent-authoring rev-parse HEAD`) for the report.
 6. Confirm these source paths exist in the clone. If any is missing, STOP
