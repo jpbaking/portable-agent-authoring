@@ -167,7 +167,9 @@ Add one paste-in prompt based on the guide's "The README install prompt":
   credentials, since the contract's own access check runs only after a clone
   exists;
 - pin the published tag, or state that omitting it installs the default
-  branch as it is at clone time;
+  branch as it is at clone time; when pinning an annotated tag, say that
+  git's "not a commit" warning about the tag is normal, since the agent sees
+  it before reading the contract;
 - read `AGENT-INSTALL.md` from that clone and follow it exactly;
 - merge with, never blindly overwrite, existing global instruction files;
   ask which harnesses to install for; report every file created or changed.
