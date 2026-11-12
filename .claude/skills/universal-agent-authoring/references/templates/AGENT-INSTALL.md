@@ -151,7 +151,10 @@ when the project does not use the toolkit>. It is safe to load globally.
      the file; do not change it.
    - If `<!-- <toolkit>:global-rule -->` exists, replace everything from it
      through `<!-- /<toolkit>:global-rule -->` with the block above.
-   - Otherwise, append the block once, after a blank line.
+   - Otherwise, append the block once at the end of the file: if the file
+     is not empty and does not end with a line break, add one; then add one
+     blank line, then the block, ending with a line break. In an empty file,
+     the block (with its final line break) is the whole content.
    - Create the file if it is missing. Never overwrite, reorder, or delete
      unrelated content, and preserve the file's line endings.
 3. Do not copy the rule into `~/.claude/rules/`, `~/.gemini/config/rules/`,
@@ -212,7 +215,8 @@ nothing new to install should report no content changes.
 Only on explicit user request:
 
 1. List what will be removed and get approval.
-2. Remove each `<skill>` directory from the step 3 destinations.
+2. Remove each `<skill>` directory from every step 3 destination where it
+   exists, whichever harnesses were selected when it was installed.
 3. Remove `~/.agents/rules/<toolkit>.md`. If `~/.agents/rules/` is then
    empty, remove that directory too.
 4. In each step 4 instruction file, first check the markers as described in

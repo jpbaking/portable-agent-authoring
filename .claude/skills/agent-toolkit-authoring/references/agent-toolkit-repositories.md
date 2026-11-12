@@ -239,7 +239,9 @@ Contract rules for blocks:
 
 1. If the opening marker exists, replace everything through the closing marker
    with the current text.
-2. Otherwise append the block once, separated by a blank line.
+2. Otherwise append the block once at the end, after exactly one blank line,
+   first adding a line break if the file does not end with one. In an empty
+   file, the block is the whole content.
 3. Create a missing file; never overwrite, reorder, or delete unrelated
    content; preserve the file's line endings.
 4. Before any install, update, or uninstall edit, check the markers. They are

@@ -167,7 +167,10 @@ load globally.
    - If `<!-- portable-agent-authoring:global-rule -->` exists, replace
      everything from it through
      `<!-- /portable-agent-authoring:global-rule -->` with the block above.
-   - Otherwise, append the block once, after a blank line.
+   - Otherwise, append the block once at the end of the file: if the file
+     is not empty and does not end with a line break, add one; then add one
+     blank line, then the block, ending with a line break. In an empty file,
+     the block (with its final line break) is the whole content.
    - Create the file if it is missing. Never overwrite, reorder, or delete
      unrelated content, and preserve the file's line endings.
 3. Do not copy the rule into `~/.claude/rules/`, `~/.gemini/config/rules/`,
@@ -238,7 +241,8 @@ Only on explicit user request:
 
 1. List what will be removed and get approval.
 2. Remove the `universal-agent-authoring` and `agent-toolkit-authoring`
-   directories from the step 3 destinations.
+   directories from every step 3 destination where they exist, whichever
+   harnesses were selected when they were installed.
 3. Remove `~/.agents/rules/portable-agent-authoring.md`. If
    `~/.agents/rules/` is then empty, remove that directory too.
 4. In each step 4 instruction file, first check the markers as described in
