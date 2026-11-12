@@ -79,6 +79,9 @@ including the first step, goes through git:
   and never print credential-helper output.
 - **No interactive prompts.** Run git with `GIT_TERMINAL_PROMPT=0` so a missing
   credential fails instead of hanging the agent's shell on a password prompt.
+  This includes the bootstrap clone in the README prompt: the contract's
+  checks only start once the agent has a clone, so the prompt itself must
+  ask for non-interactive git and a clean stop on authentication failure.
 
 ### Skills must not fetch their own repository
 
@@ -236,12 +239,20 @@ Contract rules for blocks:
 
 1. If the opening marker exists, replace everything through the closing marker
    with the current text.
-2. Otherwise append the block once, separated by a blank line.
+2. Otherwise append the block once at the end, after exactly one blank line,
+   first adding a line break if the file does not end with one. In an empty
+   file, the block is the whole content.
 3. Create a missing file; never overwrite, reorder, or delete unrelated
    content; preserve the file's line endings.
-4. If markers are malformed (an opener without a closer, or duplicates), stop
-   and show the user rather than guessing.
-5. Uninstall removes exactly the block, including the markers.
+4. Before any install, update, or uninstall edit, check the markers. They are
+   well formed only when the file has neither marker, or exactly one opener
+   followed later by exactly one closer. Anything else (an opener without a
+   closer, a closer without an opener, a closer before the opener, or
+   duplicates) is malformed: stop and show the user rather than guessing.
+5. Uninstall removes exactly the block, including the markers and the blank
+   line that rule 2 added before it, and leaves an emptied file in place.
+   It removes the shared `~/.agents/rules/` directory only if it is now
+   empty, and leaves host directories such as `~/.claude/skills/` alone.
 
 Use a block ID that includes the toolkit name so several toolkits can coexist
 in one file.
@@ -314,11 +325,13 @@ behind enterprise authentication:
 
 ```text
 Install <toolkit>. Using git with my existing credentials (do not download raw
-files or archives), clone <remote> at tag <tag> with --depth 1 into a new
-temporary directory outside any project. Then read AGENT-INSTALL.md from that
-clone and follow it exactly. Merge with—never blindly overwrite—any existing
-global instruction files, ask me which harnesses to install for, and report
-every file you created or changed.
+files or archives), clone <remote> at tag <tag> with --depth 1 and git's
+terminal prompt disabled (GIT_TERMINAL_PROMPT=0) into a new temporary
+directory outside any project. If the clone fails for lack of credentials,
+stop and tell me how to sign in. Then read AGENT-INSTALL.md from that clone
+and follow it exactly. Merge with—never blindly overwrite—any existing global
+instruction files, ask me which harnesses to install for, and report every
+file you created or changed.
 ```
 
 - **Write `<remote>` in the form your users can clone.** For an enterprise

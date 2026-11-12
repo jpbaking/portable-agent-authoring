@@ -76,23 +76,87 @@ The universal guide is normative for shared authoring. Each harness guide
 explains how that shared design maps to its native discovery paths, rule
 systems, workflow features, invocation syntax, and validation tools.
 
+## Install the guides as skills
+
+The guides are also packaged as an installable toolkit, so that whichever
+harness you use follows them whenever it writes a skill, rule, or workflow:
+
+| Installed item | What it does |
+| --- | --- |
+| `universal-agent-authoring` skill | Creates, migrates, or audits skills, persistent rules, and workflows using the universal guide and the harness guides |
+| `agent-toolkit-authoring` skill | Creates or audits a toolkit repository and its `AGENT-INSTALL.md` using the toolkit guide and template |
+| Global rule `portable-agent-authoring` | Tells the agent to use those skills whenever a task creates or changes agent instructions; it stays silent for every other task |
+
+Each skill bundles the complete guide set under its `references/` directory,
+so it works offline and never fetches this repository at run time.
+
+Paste this prompt into any of the six harnesses:
+
+```text
+Install Portable Agent Authoring. Using git with my existing credentials (do
+not download raw files or archives), clone
+https://github.com/jpbaking/portable-agent-authoring with --depth 1 and git's
+terminal prompt disabled (GIT_TERMINAL_PROMPT=0) into a new temporary
+directory outside any project. If the clone fails for lack of credentials,
+stop and tell me how to sign in. Then read AGENT-INSTALL.md from that clone
+and follow it exactly. Merge with—never blindly overwrite—any existing global
+instruction files, ask me which harnesses to install for, and report every
+file you created or changed.
+```
+
+What this does:
+
+- Your agent executes the instructions in
+  [`AGENT-INSTALL.md`](AGENT-INSTALL.md) from the cloned repository. Read it
+  first if you want to review exactly what will happen.
+- Without a tag, it installs the default branch as it is at clone time. To
+  pin a release, add "at tag `<tag>`" and the agent clones with `--branch`.
+  To use a fork, mirror, or SSH remote, substitute it in the prompt.
+- It installs user-globally and never writes to a project. It may write
+  only to `~/.agents/skills/`, `~/.claude/skills/`,
+  `~/.gemini/antigravity-cli/skills/`, `~/.agents/rules/`, and a
+  marker-guarded block in the global instruction file of each harness you
+  select (`~/.gemini/GEMINI.md`, `~/.codex/AGENTS.md`, `~/.claude/CLAUDE.md`,
+  `~/.agents/AGENTS.md`, `~/.config/opencode/AGENTS.md`).
+- Re-run the same prompt to update. Ask your agent to "uninstall Portable
+  Agent Authoring following its AGENT-INSTALL.md" to remove it.
+
+Once installed, start a new session and ask in plain language—"Use the
+`universal-agent-authoring` skill to create a skill that …"—or use the
+explicit forms: `/universal-agent-authoring` in `agy`, Claude Code, and
+Cline; `$` and select it in Codex; `@universal-agent-authoring` in OpenCode;
+name the skill in Gemini CLI.
+
 ## Repository structure
 
 ```text
 .
 ├── README.md
+├── AGENT-INSTALL.md             # install contract for the toolkit
+├── AGENTS.md                    # guidance for agents working on this repository
+├── CLAUDE.md                    # @AGENTS.md
 ├── universal-agent-authoring.md
 ├── agent-toolkit-repositories.md
 ├── templates/
-│   └── AGENT-INSTALL.md
-└── docs/
-    ├── agy.md
-    ├── codex.md
-    ├── claude.md
-    ├── gemini.md
-    ├── cline.md
-    └── opencode.md
+│   └── AGENT-INSTALL.md         # fill-in template for your own toolkit
+├── docs/
+│   ├── agy.md
+│   ├── codex.md
+│   ├── claude.md
+│   ├── gemini.md
+│   ├── cline.md
+│   └── opencode.md
+├── rules/shared/
+│   └── portable-agent-authoring.md   # global rule body (installed)
+├── .agents/skills/              # skill sources (installed); references/ is generated
+├── .claude/skills/              # generated mirror for Claude Code contributors
+├── .gemini/settings.json        # context.fileName for Gemini CLI contributors
+└── scripts/sync-skills.sh       # regenerates and checks the generated files
 ```
+
+This repository follows its own
+[toolkit guide](agent-toolkit-repositories.md), so it doubles as a worked
+example.
 
 ## Recommended universal layout
 
@@ -138,6 +202,10 @@ Plain-language invocation remains portable:
 > Use the `skill-name` skill.
 
 ## Instructions for agents
+
+If the `universal-agent-authoring` skill is installed, use it; it carries
+this procedure and the guides. If you are working on this repository itself,
+read [`AGENTS.md`](AGENTS.md) instead.
 
 If you are an agent asked to create, migrate, or update skills, rules, or
 workflows in a repository using these guides:
@@ -219,6 +287,10 @@ should:
 
 Please keep the universal guide normative. Harness guides should explain their
 mapping to it rather than copy the whole compatibility policy.
+
+The skills bundle copies of the guides. After editing a guide or a skill, run
+`scripts/sync-skills.sh` and commit the regenerated files; CI fails if they
+are out of date. See [`AGENTS.md`](AGENTS.md) for details.
 
 ## License
 
