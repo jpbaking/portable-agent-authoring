@@ -95,7 +95,7 @@ Paste this prompt into any of the six harnesses:
 ```text
 Install Portable Agent Authoring. Using git with my existing credentials (do
 not download raw files or archives), clone
-https://github.com/jpbaking/portable-agent-authoring at tag v1.0.0 with
+https://github.com/jpbaking/portable-agent-authoring at tag v1.0.1 with
 --depth 1 and git's terminal prompt disabled (GIT_TERMINAL_PROMPT=0) into a
 new temporary directory outside any project; a "not a commit" warning about
 the tag is normal. If the clone fails for lack of credentials, stop and tell
@@ -110,9 +110,9 @@ What this does:
 - Your agent executes the instructions in
   [`AGENT-INSTALL.md`](AGENT-INSTALL.md) from the cloned repository. Read it
   first if you want to review exactly what will happen.
-- It installs release `v1.0.0`; the agent clones with `--branch v1.0.0`.
+- It installs release `v1.0.1`; the agent clones with `--branch v1.0.1`.
   To install the latest unreleased changes instead, remove "at tag
-  v1.0.0", and the agent installs the default branch as it is at clone time.
+  v1.0.1", and the agent installs the default branch as it is at clone time.
   To use a fork, mirror, or SSH remote, substitute it in the prompt.
 - It installs user-globally and never writes to a project. It may write
   only to `~/.agents/skills/`, `~/.claude/skills/`,
