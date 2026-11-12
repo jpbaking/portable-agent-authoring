@@ -239,9 +239,15 @@ Contract rules for blocks:
 2. Otherwise append the block once, separated by a blank line.
 3. Create a missing file; never overwrite, reorder, or delete unrelated
    content; preserve the file's line endings.
-4. If markers are malformed (an opener without a closer, or duplicates), stop
-   and show the user rather than guessing.
-5. Uninstall removes exactly the block, including the markers.
+4. Before any install, update, or uninstall edit, check the markers. They are
+   well formed only when the file has neither marker, or exactly one opener
+   followed later by exactly one closer. Anything else (an opener without a
+   closer, a closer without an opener, a closer before the opener, or
+   duplicates) is malformed: stop and show the user rather than guessing.
+5. Uninstall removes exactly the block, including the markers and the blank
+   line that rule 2 added before it, and leaves an emptied file in place.
+   It removes the shared `~/.agents/rules/` directory only if it is now
+   empty, and leaves host directories such as `~/.claude/skills/` alone.
 
 Use a block ID that includes the toolkit name so several toolkits can coexist
 in one file.

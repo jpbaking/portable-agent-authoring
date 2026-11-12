@@ -142,13 +142,18 @@ when the project does not use the toolkit>. It is safe to load globally.
    ```
 
    Merge rules:
+   - First check the markers. They are well formed only if the file
+     contains neither marker, or exactly one opening marker followed later
+     by exactly one closing marker. Anything else is malformed: an opening
+     marker without a closing marker, a closing marker without an opening
+     marker, a closing marker before the opening marker, or either marker
+     more than once. If the markers are malformed, STOP and show the user
+     the file; do not change it.
    - If `<!-- <toolkit>:global-rule -->` exists, replace everything from it
      through `<!-- /<toolkit>:global-rule -->` with the block above.
    - Otherwise, append the block once, after a blank line.
    - Create the file if it is missing. Never overwrite, reorder, or delete
      unrelated content, and preserve the file's line endings.
-   - If the opening marker exists without its closing marker, or more than
-     once, STOP and show the user the file.
 3. Do not copy the rule into `~/.claude/rules/`, `~/.gemini/config/rules/`,
    `~/.cline/rules/`, or `~/Documents/Cline/Rules/`. Never write to
    `~/.codex/rules/`; it holds command-execution policy, not guidance.
@@ -208,11 +213,20 @@ Only on explicit user request:
 
 1. List what will be removed and get approval.
 2. Remove each `<skill>` directory from the step 3 destinations.
-3. Remove `~/.agents/rules/<toolkit>.md`.
-4. Remove the `<toolkit>:global-rule` block, including both markers, from each
-   step 4 instruction file. Leave the rest of the file untouched, and leave an
+3. Remove `~/.agents/rules/<toolkit>.md`. If `~/.agents/rules/` is then
+   empty, remove that directory too.
+4. In each step 4 instruction file, first check the markers as described in
+   step 4.2. If they are malformed, STOP and show the user the file; do not
+   change it. Otherwise remove the lines from `<!-- <toolkit>:global-rule -->`
+   through `<!-- /<toolkit>:global-rule -->`, both markers included, and one
+   blank line immediately before the opening marker if there is one. Leave
+   the rest of the file untouched, preserve its line endings, and leave an
    emptied file in place.
-5. Report every change.
+5. Remove no other directories, even if they are now empty, such as
+   `~/.claude/skills/` or `~/.gemini/antigravity-cli/skills/`: other tools
+   may use them.
+6. Report every change, including any instruction file or directory that is
+   now empty.
 
 ## Project install (opt-in only)
 
