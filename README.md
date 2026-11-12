@@ -95,13 +95,13 @@ Paste this prompt into any of the six harnesses:
 ```text
 Install Portable Agent Authoring. Using git with my existing credentials (do
 not download raw files or archives), clone
-https://github.com/jpbaking/portable-agent-authoring with --depth 1 and git's
-terminal prompt disabled (GIT_TERMINAL_PROMPT=0) into a new temporary
-directory outside any project. If the clone fails for lack of credentials,
-stop and tell me how to sign in. Then read AGENT-INSTALL.md from that clone
-and follow it exactly. Merge with—never blindly overwrite—any existing global
-instruction files, ask me which harnesses to install for, and report every
-file you created or changed.
+https://github.com/jpbaking/portable-agent-authoring at tag v1.0.0 with
+--depth 1 and git's terminal prompt disabled (GIT_TERMINAL_PROMPT=0) into a
+new temporary directory outside any project. If the clone fails for lack of
+credentials, stop and tell me how to sign in. Then read AGENT-INSTALL.md from
+that clone and follow it exactly. Merge with—never blindly overwrite—any
+existing global instruction files, ask me which harnesses to install for, and
+report every file you created or changed.
 ```
 
 What this does:
@@ -109,8 +109,9 @@ What this does:
 - Your agent executes the instructions in
   [`AGENT-INSTALL.md`](AGENT-INSTALL.md) from the cloned repository. Read it
   first if you want to review exactly what will happen.
-- Without a tag, it installs the default branch as it is at clone time. To
-  pin a release, add "at tag `<tag>`" and the agent clones with `--branch`.
+- It installs release `v1.0.0`; the agent clones with `--branch v1.0.0`.
+  To install the latest unreleased changes instead, remove "at tag
+  v1.0.0", and the agent installs the default branch as it is at clone time.
   To use a fork, mirror, or SSH remote, substitute it in the prompt.
 - It installs user-globally and never writes to a project. It may write
   only to `~/.agents/skills/`, `~/.claude/skills/`,
